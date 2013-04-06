@@ -1,13 +1,12 @@
 #coding=utf-8
 import os
-from flask import session
 from flask import render_template,flash,redirect, g
 from flask import request, url_for
-from flask.ext.login import current_user, logout_user, login_user, login_required, confirm_login
+from flask.ext.login import current_user, logout_user, login_user, login_required, confirm_login, fresh_login_required
 from werkzeug.utils import secure_filename
 from app import app,db,loginmanager
-from app.forms import LoginForm,RegistrationForm
-from app.models import User
+from app.forms import LoginForm,RegistrationForm,ModifyPassword
+from app.models import User,Weibo
 
 @loginmanager.user_loader
 def load_user(id):
@@ -24,6 +23,15 @@ def logout():
     logout_user()
     return redirect(url_for('index'))
 
+@app.route("/reauth", methods=["GET", "POST"])
+@login_required
+def reauth():
+    if request.method == "POST":
+        confirm_login()
+        flash(u"Reauthenticated.")
+        return redirect(request.args.get("next") or url_for("index"))
+    return render_template("reauth.html")
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     form = LoginForm()
@@ -37,6 +45,20 @@ def login():
         # return redirect(url_for('index',name = form.user.username))
         return redirect(request.args.get("next") or url_for("index"))
     return render_template('login.html', form=form)
+
+
+@app.route('/modpassword/',methods=['GET', 'POST'])
+@fresh_login_required
+def modpassword():
+    form = ModifyPassword()
+    if form.validate_on_submit():
+        user = User.query.filter_by(username=current_user.username).first()
+        user.password = form.newpassword.data
+        db.session.add(user)
+        db.session.commit()
+        flash(u'修改密码成功')
+        return redirect(url_for('index'))
+    return render_template('modpassword.html', form=form,)
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -57,13 +79,17 @@ def index():
     print app.config
     if not current_user.is_authenticated():
         owner = u'游客'
+        content = u'注册登录后就可以发表消息啦！'
     else:
         owner = current_user.username
-        email = current_user.email
-    users= [{'author':{'name':'nicky'},'body':'Hello World'},{'author':{'name':'andy'},'body':'Come On!'}]
+        weibo = Weibo.query.filter_by(user_id = current_user.id).first()
+        if not weibo:
+            content =  None
+        else:
+            content = weibo
     title = 'HOME PAGE'
 
-    return render_template('hello.html',title = title,users = users,name = owner)
+    return render_template('hello.html',title = title,name = owner,contents= content)
 
 
 

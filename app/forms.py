@@ -1,4 +1,5 @@
 #coding=utf-8
+from flask import g
 from flask.ext.wtf import Form, TextField, BooleanField,PasswordField,FileField,FieldList
 from flask.ext.wtf import Required
 from flask.ext.wtf import file_required
@@ -45,6 +46,35 @@ class LoginForm(Form):
 
         self.user = user
         return True
+
+class ModifyPassword(Form):
+    password = PasswordField('Old Password', [
+        validators.Required(),
+        validators.EqualTo('confirm', message='Passwords must match')
+    ])
+    confirm = PasswordField('Repeat Password')
+    newpassword = PasswordField('New Password')
+
+    def __init__(self, *args, **kwargs):
+        Form.__init__(self, *args, **kwargs)
+        self.user = None
+    def validate(self):
+        rv = Form.validate(self)
+        self.user = g.user
+        if not rv:
+            return False
+        if self.user.password != self.password.data:
+            self.password.errors.append('Invalid password')
+            return False
+        if self.newpassword.data == self.password.data:
+            self.newpassword.errors.append(u'不能输入相同的密码')
+            return False
+        if self.newpassword.data == None:
+            self.newpassword.errors.append(u'新密码不能为空')
+        return True
+
+
+
 
 #测试上传
 class FileList(Form):

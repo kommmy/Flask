@@ -1,7 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
 <h1>Hello! {{name}} </h1>
-{% for user in users %}
-<div><p>{{ user.author.name }} say:<b>{{user.body}}</b> </p></div>
-{%endfor%}
+{% if not contents %}
+    <p>想不想说点什么？</p>
+{% else %}
+    {% if current_user.is_authenticated() %}
+    <div class=flash><h2>{{ contents.datetime }}   {{ contents.author }} say:<b>{{contents.body}}</b> </h2></div>
+    {% else %}
+    <div class=flash><h2>注册后就能发言啦</h2></div>
+    {% endif %}
+{% endif %}
+
 {% endblock %}

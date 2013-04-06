@@ -39,3 +39,15 @@ class Post(db.Model):
 
     def __repr__(self):
         return '<Post %r>' % (self.body)
+
+
+class Weibo(db.Model):
+    id = db.Column(db.Integer,primary_key = True)
+    author = db.Column(db.String(60))
+    datetime = db.Column(db.DateTime)
+    body = db.Column(db.String(140))
+    user_id = db.Column(db.Integer,db.ForeignKey('user.id'))
+
+    def __repr__(self):
+        return '<Weibo %r>' % (self.body)
+
